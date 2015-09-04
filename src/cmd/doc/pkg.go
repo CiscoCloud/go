@@ -204,9 +204,9 @@ func (pkg *Package) oneLineTypeDecl(spec *ast.TypeSpec) {
 }
 
 // packageDoc prints the docs for the package (package doc plus one-liners of the rest).
-func (pkg *Package) packageDoc() {
+func (pkg *Package) packageDoc(showRaml bool) {
 	defer pkg.flush()
-	if pkg.showInternals() {
+	if pkg.showInternals() && !showRaml {
 		pkg.packageClause(false)
 	}
 
@@ -219,11 +219,16 @@ func (pkg *Package) packageDoc() {
 	}
 
 	pkg.newlines(1)
-	pkg.valueSummary(pkg.doc.Consts)
-	pkg.valueSummary(pkg.doc.Vars)
-	pkg.funcSummary(pkg.doc.Funcs)
-	pkg.typeSummary()
-	pkg.bugs()
+
+    if showRaml == true {
+    	pkg.ramls()
+	} else {
+	    pkg.valueSummary(pkg.doc.Consts)
+	    pkg.valueSummary(pkg.doc.Vars)
+	    pkg.funcSummary(pkg.doc.Funcs)
+	    pkg.typeSummary()
+	    pkg.bugs()
+    }
 }
 
 // showInternals reports whether we should show the internals
@@ -304,6 +309,17 @@ func (pkg *Package) bugs() {
 	pkg.Printf("\n")
 	for _, note := range pkg.doc.Notes["BUG"] {
 		pkg.Printf("%s: %v\n", "BUG", note.Body)
+	}
+}
+
+// ramls prints the RAML information for the package.
+func (pkg *Package) ramls() {
+	if pkg.doc.Ramls == nil {
+		return
+	}
+	pkg.Printf("\n")
+	for _, raml := range pkg.doc.Ramls {
+		pkg.Printf("%v\n", raml.Body)
 	}
 }
 

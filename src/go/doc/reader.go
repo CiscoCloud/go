@@ -149,6 +149,7 @@ type reader struct {
 	doc       string // package documentation, if any
 	filenames []string
 	notes     map[string][]*Note
+	ramls      []*Raml
 
 	// declarations
 	imports map[string]int
@@ -451,6 +452,52 @@ func (r *reader) readNotes(comments []*ast.CommentGroup) {
 	}
 }
 
+var (
+	ramlMarker    = `RAML:`                    
+	ramlMarkerRx  = regexp.MustCompile(`^[ \t]*` + ramlMarker)      // RAML: at text start
+	ramlCommentRx = regexp.MustCompile(`^/[/*][ \t]*` + ramlMarker) // RAML: at comment start
+)
+
+// readRaml collects the raml from a sequence of comments.
+//
+func (r *reader) readRaml(list []*ast.Comment) {
+	text := (&ast.CommentGroup{List: list}).Text()
+	if m := ramlMarkerRx.FindStringSubmatchIndex(text); m != nil {
+		body := text[m[1]:]
+		if body != "" {
+			r.ramls = append(r.ramls, &Raml{
+				Pos:  list[0].Pos(),
+				End:  list[len(list)-1].End(),
+				Body: body,
+			})	
+		}
+	}
+}
+
+// readRamls extracts ramls from comments.
+// A raml must start at the beginning of a comment with "RAML:"
+// and is followed by the raml body.
+// The raml ends at the end of the comment group or at the start of
+// another raml in the same comment group, whichever comes first.
+//
+func (r *reader) readRamls(comments []*ast.CommentGroup) {
+	for _, group := range comments {
+		i := -1 // comment index of most recent raml start, valid if >= 0
+		list := group.List
+		for j, c := range list {
+			if ramlCommentRx.MatchString(c.Text) {
+				if i >= 0 {
+					r.readRaml(list[i:j])
+				}
+				i = j
+			}
+		}
+		if i >= 0 {
+			r.readRaml(list[i:])
+		}
+	}
+}
+
 // readFile adds the AST for a source file to the reader.
 //
 func (r *reader) readFile(src *ast.File) {
@@ -518,6 +565,7 @@ func (r *reader) readFile(src *ast.File) {
 
 	// collect MARKER(...): annotations
 	r.readNotes(src.Comments)
+	r.readRamls(src.Comments)
 	src.Comments = nil // consumed unassociated comments - remove from AST
 }
 

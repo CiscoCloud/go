@@ -49,6 +49,7 @@ var (
 	unexported bool // -u flag
 	matchCase  bool // -c flag
 	showCmd    bool // -cmd flag
+	showRaml   bool // -raml flag
 )
 
 // usage is a replacement usage function for the flags package.
@@ -83,7 +84,10 @@ func do(writer io.Writer, flagSet *flag.FlagSet, args []string) (err error) {
 	flagSet.BoolVar(&unexported, "u", false, "show unexported symbols as well as exported")
 	flagSet.BoolVar(&matchCase, "c", false, "symbol matching honors case (paths not affected)")
 	flagSet.BoolVar(&showCmd, "cmd", false, "show symbols with package docs even if package is a command")
+	flagSet.BoolVar(&showRaml, "raml", false, "show only comments whose first line includes 'RAML'")
+
 	flagSet.Parse(args)
+
 	buildPackage, userPath, symbol := parseArgs(flagSet.Args())
 	symbol, method := parseSymbol(symbol)
 	pkg := parsePackage(writer, buildPackage, userPath)
@@ -102,7 +106,7 @@ func do(writer io.Writer, flagSet *flag.FlagSet, args []string) (err error) {
 	}()
 	switch {
 	case symbol == "":
-		pkg.packageDoc()
+		pkg.packageDoc(showRaml)
 		return
 	case method == "":
 		pkg.symbolDoc(symbol)

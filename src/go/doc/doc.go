@@ -18,6 +18,7 @@ type Package struct {
 	Imports    []string
 	Filenames  []string
 	Notes      map[string][]*Note
+	Ramls      []*Raml
 
 	// Deprecated: For backward compatibility Bugs is still populated,
 	// but all new code should use Notes instead.
@@ -75,6 +76,14 @@ type Note struct {
 	Body     string    // note body text
 }
 
+// A Raml represents a marked comment starting with "RAML: raml body".
+// The ":" following RAML marker is mandatory.
+// Ramls are collected in the Package.Ramls array.
+type Raml struct {
+	Pos, End token.Pos // position range of the comment containing the marker
+	Body     string    // note body text
+}
+
 // Mode values control the operation of New.
 type Mode int
 
@@ -104,6 +113,7 @@ func New(pkg *ast.Package, importPath string, mode Mode) *Package {
 		Filenames:  r.filenames,
 		Notes:      r.notes,
 		Bugs:       noteBodies(r.notes["BUG"]),
+		Ramls:      r.ramls,
 		Consts:     sortedValues(r.values, token.CONST),
 		Types:      sortedTypes(r.types, mode&AllMethods != 0),
 		Vars:       sortedValues(r.values, token.VAR),

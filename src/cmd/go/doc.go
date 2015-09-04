@@ -6,7 +6,7 @@ package main
 
 var cmdDoc = &Command{
 	Run:         runDoc,
-	UsageLine:   "doc [-u] [-c] [package|[package.]symbol[.method]]",
+	UsageLine:   "doc [-u] [-c] [-raml] [package|[package.]symbol[.method]]",
 	CustomFlags: true,
 	Short:       "show documentation for package or symbol",
 	Long: `
@@ -106,6 +106,8 @@ Flags:
 	-u
 		Show documentation for unexported as well as exported
 		symbols and methods.
+	-raml
+		Show package documentation where first line of comment begins with RAML:
 `,
 }
 
